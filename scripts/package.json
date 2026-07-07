@@ -1,0 +1,14 @@
+{
+  "name": "hxmp-agentid-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "HXMP Agent ID Protocol X1 transaction helpers",
+  "license": "MIT",
+  "dependencies": {
+    "@solana/web3.js": "1.98.4"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
+  }
+}

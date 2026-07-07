@@ -1,0 +1,85 @@
+{
+  "name": "x1-memory-protocol",
+  "display_name": "HXMP: Hermes X1 Memory Protocol",
+  "version": "0.1.0",
+  "description": "Agent skill manifest for using HXMP to give AI agents identity-linked encrypted memory, receipts, and safe X1 blockchain tools.",
+  "entrypoints": {
+    "human_readme": "README.md",
+    "agent_instructions": "AGENTS.md",
+    "agent_api": "API.md",
+    "hermes_skill": "SKILL.md",
+    "tool_manifest": "TOOL_MANIFEST.json",
+    "publish_safety": "references/github-publish-safety.md"
+  },
+  "capabilities": [
+    "x1_rpc_health_check",
+    "x1_wallet_status",
+    "agent_id_protocol_verify",
+    "agent_id_protocol_registration",
+    "agent_id_nft_card_delivery",
+    "hxmp_memory_key_initialization",
+    "hxmp_memory_dry_run",
+    "hxmp_encrypted_memory_write",
+    "hxmp_memory_readback_verification",
+    "hxmp_memory_lanes",
+    "hxmp_sequence_numbers",
+    "hxmp_previous_hash_links",
+    "hxmp_receipts",
+    "x1_token_reading",
+    "x1_token_creation",
+    "x1_liquidity_preview",
+    "x1_liquidity_management"
+  ],
+  "memory_model": {
+    "bookmark_record": "soul.latest",
+    "encrypted_chunk_record": "soul.chunk",
+    "default_lane": "core",
+    "organization_fields": ["lane", "seq", "prev", "sid", "n"],
+    "future_index_record": "manifest.latest",
+    "plaintext_visibility": "encrypted_only; plaintext is recoverable only with local HXMP memory key"
+  },
+  "safety_contract": {
+    "read_only_allowed_without_approval": [
+      "rpc health",
+      "wallet balance/status",
+      "Agent ID verification",
+      "dry-run memory write",
+      "read/decrypt memory when user provides local memory key",
+      "token balance reads",
+      "liquidity quotes"
+    ],
+    "explicit_approval_required": [
+      "register Agent ID identity",
+      "write HXMP memory",
+      "create token",
+      "create liquidity pool",
+      "add liquidity",
+      "remove liquidity",
+      "move assets",
+      "write receipts to chain"
+    ],
+    "refuse_if": [
+      "state-changing action lacks explicit user approval",
+      "keypair would be read during dry-run",
+      "source contains unapproved secrets or private personal data",
+      "dry-run hash differs from write-time hash",
+      "Agent ID Protocol verification fails before normal memory write",
+      "readback hash verification fails",
+      "receipt would include secrets"
+    ]
+  },
+  "agent_loading_order": [
+    "AGENTS.md",
+    "README.md",
+    "API.md",
+    "TOOL_MANIFEST.json",
+    "SKILL.md",
+    "references/github-publish-safety.md"
+  ],
+  "improvement_loop": {
+    "can_store_learnings_as_hxmp_memory": true,
+    "can_write_non_secret_receipts": true,
+    "can_improve_repo_files_with_user_approval": true,
+    "must_not_self_modify_or_publish_without_user_approval": true
+  }
+}

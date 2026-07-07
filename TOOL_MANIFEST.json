@@ -1,0 +1,192 @@
+{
+  "name": "HXMP Tools",
+  "protocol": "HXMP",
+  "version": "0.1.0",
+  "description": "Agent-discoverable command manifest for Hermes X1 Memory Protocol tools.",
+  "runtime": {
+    "type": "node",
+    "working_directory": ".",
+    "install": "cd scripts && npm install --ignore-scripts"
+  },
+  "safety": {
+    "read_only_actions_may_run_without_approval": true,
+    "state_changing_actions_require_explicit_user_approval": true,
+    "dry_runs_must_not_read_keypairs": true,
+    "never_print_or_commit_secret_keys": true,
+    "never_print_or_commit_hxmp_encryption_keys": true,
+    "memory_writes_require_dry_run_hash": true,
+    "memory_writes_require_readback_verification": true
+  },
+  "secret_files_never_commit": [
+    "id.json",
+    "hxmp-encryption.key",
+    ".env",
+    "*.key",
+    "*.pem",
+    "*.secret",
+    "node_modules/"
+  ],
+  "commands": {
+    "hxmp.rpc_health": {
+      "description": "Check X1 RPC health.",
+      "script": "node scripts/hxmp_tools.mjs rpc-health",
+      "read_only": true,
+      "requires_approval": false
+    },
+    "hxmp.wallet_status": {
+      "description": "Check native XNT balance and Agent ID Protocol status for a wallet.",
+      "script": "node scripts/hxmp_tools.mjs wallet-status --wallet <WALLET_PUBLIC_KEY>",
+      "inputs": [
+        "WALLET_PUBLIC_KEY"
+      ],
+      "read_only": true,
+      "requires_approval": false
+    },
+    "hxmp.soul_status": {
+      "description": "Compare local SOUL.md hash to the newest on-chain HXMP pointer for a lane.",
+      "script": "node scripts/hxmp_tools.mjs soul-status --wallet <WALLET_PUBLIC_KEY> --source <SOURCE_FILE> --lane <LANE>",
+      "inputs": [
+        "WALLET_PUBLIC_KEY",
+        "SOURCE_FILE",
+        "LANE"
+      ],
+      "read_only": true,
+      "requires_approval": false
+    },
+    "hxmp.dry_run_soul": {
+      "description": "Preview an HXMP memory write, classify safety, compute hash, lane, sequence, and previous pointer.",
+      "script": "node scripts/hxmp_tools.mjs dry-run-soul --wallet <WALLET_PUBLIC_KEY> --source <SOURCE_FILE> --profile default --lane <LANE>",
+      "inputs": [
+        "WALLET_PUBLIC_KEY",
+        "SOURCE_FILE",
+        "LANE"
+      ],
+      "read_only": true,
+      "requires_approval": false
+    },
+    "hxmp.write_soul": {
+      "description": "Encrypt and write HXMP memory chunks plus latest pointer, then verify readback.",
+      "script": "node scripts/hxmp_tools.mjs write-soul --keypair <KEYPAIR_PATH> --encryption-key <HXMP_MEMORY_KEY_PATH> --source <SOURCE_FILE> --profile default --lane <LANE> --expected-sha256 <EXPECTED_SHA256> --execute --confirm-write",
+      "inputs": [
+        "KEYPAIR_PATH",
+        "HXMP_MEMORY_KEY_PATH",
+        "SOURCE_FILE",
+        "LANE",
+        "EXPECTED_SHA256"
+      ],
+      "read_only": false,
+      "requires_approval": true,
+      "preconditions": [
+        "User approved exact source, lane, wallet, and expected hash.",
+        "Agent ID Protocol verification is true.",
+        "Dry-run hash equals EXPECTED_SHA256.",
+        "Source safety classification is safe or user explicitly approved override."
+      ]
+    },
+    "hxmp.read_soul": {
+      "description": "Read newest HXMP memory for a wallet/lane, decrypt locally, and verify hash.",
+      "script": "node scripts/hxmp_tools.mjs read-soul --wallet <WALLET_PUBLIC_KEY> --encryption-key <HXMP_MEMORY_KEY_PATH> --lane <LANE>",
+      "inputs": [
+        "WALLET_PUBLIC_KEY",
+        "HXMP_MEMORY_KEY_PATH",
+        "LANE"
+      ],
+      "read_only": true,
+      "requires_approval": false,
+      "secret_inputs": [
+        "HXMP_MEMORY_KEY_PATH"
+      ]
+    },
+    "agentid.status": {
+      "description": "Check Agent ID Protocol registration state, AGI balance, XNT balance, and next action.",
+      "script": "node scripts/agentid_register.mjs status --wallet <WALLET_PUBLIC_KEY>",
+      "inputs": [
+        "WALLET_PUBLIC_KEY"
+      ],
+      "read_only": true,
+      "requires_approval": false
+    },
+    "agentid.nft_image": {
+      "description": "Fetch Agent ID Protocol verify data, follow nft.metadataUri, inspect metadata.image, optionally download the NFT/card image file for chat delivery.",
+      "script": "node scripts/hxmp_tools.mjs agentid-nft-image --wallet <WALLET_PUBLIC_KEY> --out <OUTPUT_IMAGE_PATH>",
+      "inputs": [
+        "WALLET_PUBLIC_KEY",
+        "OUTPUT_IMAGE_PATH"
+      ],
+      "read_only": true,
+      "requires_approval": false,
+      "source_of_truth": "GET /api/verify?wallet=<wallet> -> verify.nft.metadataUri -> NFT metadata image field",
+      "delivery": "Send downloaded image file to the user as part of the Agent ID registration receipt. If SVG, render/convert to PNG when the chat surface needs raster images.",
+      "fallback": "If metadata has no image field but verification succeeds, report verify result, NFT mint, transaction/explorer links; do not fabricate image endpoints."
+    },
+    "agentid.register_flow": {
+      "description": "Register Agent ID Protocol identity, burn AGI, attach NFT, download card image, and verify.",
+      "script": "node scripts/agentid_register.mjs register-flow --keypair <KEYPAIR_PATH> --name <AGENT_NAME> --description <SHORT_TAGLINE> --execute --confirm-execute",
+      "inputs": [
+        "KEYPAIR_PATH",
+        "AGENT_NAME",
+        "SHORT_TAGLINE"
+      ],
+      "read_only": false,
+      "requires_approval": true,
+      "secret_inputs": [
+        "KEYPAIR_PATH"
+      ]
+    },
+    "x1.wallet_tokens": {
+      "description": "Read native XNT and SPL token balances for a wallet.",
+      "script": "node scripts/xdex_tools.mjs wallet-tokens --wallet <WALLET_PUBLIC_KEY>",
+      "inputs": [
+        "WALLET_PUBLIC_KEY"
+      ],
+      "read_only": true,
+      "requires_approval": false
+    },
+    "x1.create_token": {
+      "description": "Create a token on X1 after preview and explicit approval.",
+      "script": "node scripts/xdex_tools.mjs create-token --keypair <KEYPAIR_PATH> --name <TOKEN_NAME> --symbol <SYMBOL> --decimals <DECIMALS> --supply <SUPPLY> --execute --confirm-execute --hxmp-receipt",
+      "inputs": [
+        "KEYPAIR_PATH",
+        "TOKEN_NAME",
+        "SYMBOL",
+        "DECIMALS",
+        "SUPPLY"
+      ],
+      "read_only": false,
+      "requires_approval": true,
+      "secret_inputs": [
+        "KEYPAIR_PATH"
+      ]
+    },
+    "x1.add_liquidity": {
+      "description": "Add liquidity after quote, preview, slippage review, and explicit approval.",
+      "script": "node scripts/xdex_tools.mjs add-liquidity --keypair <KEYPAIR_PATH> --pool <POOL_STATE> --xnt <AMOUNT> --slippage-bps <BPS> --execute --confirm-execute --hxmp-receipt",
+      "inputs": [
+        "KEYPAIR_PATH",
+        "POOL_STATE",
+        "AMOUNT",
+        "BPS"
+      ],
+      "read_only": false,
+      "requires_approval": true,
+      "secret_inputs": [
+        "KEYPAIR_PATH"
+      ]
+    },
+    "x1.remove_liquidity": {
+      "description": "Remove liquidity after quote, preview, slippage review, and explicit approval.",
+      "script": "node scripts/xdex_tools.mjs remove-liquidity --keypair <KEYPAIR_PATH> --pool <POOL_STATE> --lp <AMOUNT> --slippage-bps <BPS> --execute --confirm-execute --hxmp-receipt",
+      "inputs": [
+        "KEYPAIR_PATH",
+        "POOL_STATE",
+        "AMOUNT",
+        "BPS"
+      ],
+      "read_only": false,
+      "requires_approval": true,
+      "secret_inputs": [
+        "KEYPAIR_PATH"
+      ]
+    }
+  }
+}

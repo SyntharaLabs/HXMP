@@ -253,6 +253,19 @@ If unsure, do **not** write. Ask the user or store locally only.
 4. If a keypair is generated, show only the public key and the path/secret-store label, never the secret bytes.
 5. Every transaction should be previewed before signing unless the user has explicitly enabled a narrow automation policy.
 
+### Simple X1 wallet transfers
+
+When the user asks to send or transfer XNT, AGI, X1X, or another X1 token, use the transfer tool instead of improvising with XDEX, Solana CLI, or raw RPC submission:
+
+1. Run `scripts/x1_wallet_tools.mjs transfer-preview` with the sender public key, recipient **owner wallet**, exact decimal-string amount, and optional token mint. Preview mode never reads a keypair, signs, or broadcasts.
+2. Show the exact asset/mint, sender, recipient, UI/base-unit amount, token accounts/ATA creation, fee estimate, simulation result, and `preview_sha256`.
+3. If simulation fails, stop. Do not present the transfer as executable.
+4. Obtain explicit approval for that exact preview.
+5. Execute only with the identical recipient/amount/mint, exact `--expected-preview-sha256`, `--execute`, and `--confirm-transfer`.
+6. Return the signature, X1 explorer link, confirmation state, and verified source/recipient balance deltas.
+
+Omit `--mint` only for native XNT. Token transfers use live mint decimals and token program, exact decimal-string conversion, a derived recipient ATA, and SPL `TransferChecked`. See `references/x1-wallet-transfers.md`.
+
 ### Recommended wallet paths
 
 Use profile-specific paths so agents do not collide:
@@ -596,6 +609,7 @@ A named Hermes profile can use a profile-local plugin plus script tool layer for
 ```text
 Plugin: ~/.hermes/profiles/<profile-name>/plugins/x1-hxmp/
 Script: ~/.hermes/profiles/<profile-name>/skills/cryptocurrency/x1-memory-protocol/scripts/hxmp_tools.mjs
+Wallet script: ~/.hermes/profiles/<profile-name>/skills/cryptocurrency/x1-memory-protocol/scripts/x1_wallet_tools.mjs
 Toolset: x1_hxmp
 ```
 
@@ -604,6 +618,8 @@ Registered Hermes tools:
 | Tool | Purpose | State-changing? |
 |---|---|---|
 | `x1_wallet_status` | Check native XNT and AgentID verify status. | No |
+| `x1_transfer_preview` | Validate, fee-check, build, and simulate an exact native XNT or token transfer without loading a keypair. | No |
+| `x1_transfer` | Rebuild, sign, broadcast, confirm, and balance-verify the exact approved transfer. | Yes |
 | `agentid_nft_image` | Fetch AgentID verify data, NFT metadata URI, metadata `image` URL/card, and optionally download it for chat delivery. | No |
 | `hxmp_dry_run_soul` | Read SOUL.md, verify AgentID, classify safety, compute SHA-256, and produce the exact write preview. | No |
 | `hxmp_write_soul` | Encrypt SOUL.md and write `soul.snapshot` + `soul.latest` memo records, then read back/verify. Requires AgentID, exact expected SHA-256, `execute=true`, and `confirm_write=true`. | Yes |
@@ -614,6 +630,8 @@ Equivalent script commands for terminal use:
 
 ```bash
 node scripts/hxmp_tools.mjs wallet-status --wallet <WALLET_PUBLIC_KEY>
+node scripts/x1_wallet_tools.mjs transfer-preview --wallet <WALLET_PUBLIC_KEY> --to <RECIPIENT_OWNER_WALLET> --amount <AMOUNT> [--mint <TOKEN_MINT>]
+node scripts/x1_wallet_tools.mjs transfer --keypair ~/.hermes/x1/default/id.json --to <RECIPIENT_OWNER_WALLET> --amount <AMOUNT> [--mint <TOKEN_MINT>] --expected-preview-sha256 sha256:<APPROVED_HASH> --execute --confirm-transfer
 node scripts/hxmp_tools.mjs soul-status --wallet <WALLET_PUBLIC_KEY> --profile default
 node scripts/hxmp_tools.mjs backup-encryption-key --wallet <WALLET_PUBLIC_KEY> --profile default --encryption-key ~/.hermes/x1/default/hxmp-encryption.key
 node scripts/hxmp_tools.mjs agentid-nft-image --wallet <WALLET_PUBLIC_KEY> --out /tmp/agentid-card.svg
@@ -694,12 +712,15 @@ For an agent to write to chain, it needs this skill plus signing capability: a f
 9. **Using wallet secret as encryption key by default.** Keep signing and encryption keys separate.
 10. **Misdiagnosing escaped memo JSON as write failure.** X1/Solana RPC may return memo JSON as raw `{...}` or escaped `{\"p\":\"HXMP\"...}` strings. `scan-manifest` and `read-soul` must try raw, decoded, and unescaped variants before declaring records missing. See `references/hxmp-memo-readback-escaping.md`.
 11. **Reporting success without verification.** Always read back and verify the plaintext hash after writing.
+12. **Treating simple transfers as an undocumented edge case.** Use `transfer-preview` followed by the exact hash-bound `transfer`; never guess decimals, recipient ATA, fees, or raw instruction data, and never substitute an XDEX swap for a wallet transfer.
 
 ## Verification Checklist
 
 - [ ] X1 RPC `getHealth` returns `ok`.
 - [ ] AgentID docs were checked or known current: `https://agentid-app.vercel.app/api/docs`.
 - [ ] Wallet public key is known; secret key was not printed or written.
+- [ ] For a transfer, the exact preview simulated successfully and the user approved its hash-bound intent.
+- [ ] A completed transfer has a confirmed signature, explorer link, and verified source/recipient balance deltas.
 - [ ] AgentID verification was checked with `GET /api/verify?wallet=<wallet>`.
 - [ ] Wallet owns/verifies a soulbound AgentID NFT, or the user explicitly disabled the AgentID prerequisite.
 - [ ] Wallet has enough XNT for the intended memo txs and enough AGI/registration status if AgentID setup is needed.

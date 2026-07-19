@@ -14,6 +14,7 @@ It tells an AI agent how to use X1, Agent ID Protocol, encrypted memory, receipt
 6. Always preview state-changing actions before execution.
 7. Always write receipts without secrets.
 8. Always verify readback after memory writes.
+9. For transfers, simulate first and bind execution to the exact user-approved preview SHA-256.
 
 ## Required local files
 
@@ -245,7 +246,34 @@ The read path must verify:
 5. Snapshot IDs are consistent.
 6. The decrypted plaintext hash matches the on-chain hash.
 
-## Step 9: Token creation
+## Step 9: Transfer XNT or tokens
+
+Preview first. The recipient is always the **owner wallet**, not a token-account address. Omit `--mint` for native XNT.
+
+```bash
+node scripts/x1_wallet_tools.mjs transfer-preview \
+  --wallet <SENDER_PUBLIC_KEY> \
+  --to <RECIPIENT_OWNER_WALLET> \
+  --amount 0.01
+```
+
+Add `--mint <TOKEN_MINT>` for an SPL or Token-2022 token. Preview mode validates live balances and accounts, converts exact decimal strings without floating point, estimates the fee, and simulates the exact transaction. It never reads a keypair, signs, or broadcasts.
+
+Execute only after the user approves the exact successful preview:
+
+```bash
+node scripts/x1_wallet_tools.mjs transfer \
+  --keypair ~/.hermes/x1/default/id.json \
+  --to <RECIPIENT_OWNER_WALLET> \
+  --amount 1.25 \
+  --mint <OPTIONAL_TOKEN_MINT> \
+  --expected-preview-sha256 sha256:<APPROVED_HASH> \
+  --execute --confirm-transfer
+```
+
+The tool rebuilds the live intent, refuses a mismatched hash, confirms the transaction, and verifies source and recipient balance deltas. A failed simulation is not executable. See `references/x1-wallet-transfers.md`.
+
+## Step 10: Token creation
 
 Preview first:
 
@@ -270,7 +298,7 @@ node scripts/xdex_tools.mjs create-token \
   --execute --confirm-execute --hxmp-receipt
 ```
 
-## Step 10: Liquidity operations
+## Step 11: Liquidity operations
 
 Read-only quotes:
 
@@ -311,6 +339,7 @@ An agent must refuse or stop when:
 6. A tool would write secrets, private data, or raw memory to chain.
 7. A readback hash fails verification.
 8. A transaction or receipt would omit important user-visible details.
+9. A transfer simulation fails or its freshly rebuilt preview hash differs from the approved hash.
 
 ## Disclaimer
 

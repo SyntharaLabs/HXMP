@@ -32,6 +32,7 @@ node scripts/hxmp_tools.mjs rpc-health
 node scripts/hxmp_tools.mjs wallet-status --wallet <WALLET_PUBLIC_KEY>
 node scripts/hxmp_tools.mjs dry-run-soul --wallet <WALLET_PUBLIC_KEY> --profile default
 node scripts/agentid_register.mjs status --wallet <WALLET_PUBLIC_KEY>
+node scripts/x1_wallet_tools.mjs transfer-preview --wallet <WALLET_PUBLIC_KEY> --to <RECIPIENT_OWNER_WALLET> --amount <AMOUNT> [--mint <TOKEN_MINT>]
 node scripts/xdex_tools.mjs wallet-tokens --wallet <WALLET_PUBLIC_KEY>
 node scripts/xdex_tools.mjs quote-add-liquidity --pool <POOL_STATE> --xnt <AMOUNT>
 node scripts/xdex_tools.mjs quote-remove-liquidity --pool <POOL_STATE> --lp <AMOUNT>
@@ -51,6 +52,12 @@ HXMP memory writes also require:
 --expected-sha256 sha256:<HASH_FROM_DRY_RUN> --execute --confirm-write
 ```
 
+Wallet transfers require a successful simulated preview, explicit approval of that exact preview, and:
+
+```bash
+--expected-preview-sha256 sha256:<APPROVED_HASH> --execute --confirm-transfer
+```
+
 ## Required refusal conditions
 
 Refuse or stop if:
@@ -62,6 +69,7 @@ Refuse or stop if:
 5. A command would read keypair material during dry-run.
 6. A receipt would include secrets or private data.
 7. Readback hash verification fails.
+8. A transfer simulation fails or the execution intent does not match the approved preview SHA-256.
 
 ## Repository hygiene
 
@@ -86,6 +94,7 @@ If you are preparing a pull request, run static checks first:
 ```bash
 node --check scripts/hxmp_tools.mjs
 node --check scripts/agentid_register.mjs
+node --check scripts/x1_wallet_tools.mjs
 node --check scripts/xdex_tools.mjs
 python3 -m py_compile scripts/agentid_status.py
 cd scripts && npm audit

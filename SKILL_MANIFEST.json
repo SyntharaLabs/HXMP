@@ -1,7 +1,7 @@
 {
   "name": "x1-memory-protocol",
   "display_name": "HXMP: Hermes X1 Memory Protocol",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Agent skill manifest for using HXMP to give AI agents identity-linked encrypted memory, receipts, and safe X1 blockchain tools.",
   "entrypoints": {
     "human_readme": "README.md",
@@ -14,6 +14,8 @@
   "capabilities": [
     "x1_rpc_health_check",
     "x1_wallet_status",
+    "x1_transfer_preview",
+    "x1_transfer_execution",
     "agent_id_protocol_verify",
     "agent_id_protocol_registration",
     "agent_id_nft_card_delivery",
@@ -46,7 +48,8 @@
       "dry-run memory write",
       "read/decrypt memory when user provides local memory key",
       "token balance reads",
-      "liquidity quotes"
+      "liquidity quotes",
+      "wallet transfer preview and simulation"
     ],
     "explicit_approval_required": [
       "register Agent ID identity",
@@ -55,7 +58,7 @@
       "create liquidity pool",
       "add liquidity",
       "remove liquidity",
-      "move assets",
+      "send an XNT or token transfer tied to an exact preview hash",
       "write receipts to chain"
     ],
     "refuse_if": [
@@ -65,7 +68,8 @@
       "dry-run hash differs from write-time hash",
       "Agent ID Protocol verification fails before normal memory write",
       "readback hash verification fails",
-      "receipt would include secrets"
+      "receipt would include secrets",
+      "transfer simulation fails or execution differs from the approved preview hash"
     ]
   },
   "agent_loading_order": [

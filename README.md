@@ -23,7 +23,8 @@ HXMP helps agents:
 7. Decrypt memory locally.
 8. Verify recovered memory against on-chain hashes.
 9. Write non-secret receipts for important actions.
-10. Use X1 tools for token creation and liquidity operations with explicit approval.
+10. Preview and send native XNT or SPL/Token-2022 wallet transfers with exact approval binding.
+11. Use X1 tools for token creation and liquidity operations with explicit approval.
 
 ## What HXMP does not do
 
@@ -50,7 +51,9 @@ Read-only commands can run without approval.
 
 Reading HXMP records through X1 RPC is free in the sense that it does **not** spend XNT gas, because it does not sign or submit a transaction. Network providers may still rate-limit RPC calls.
 
-State-changing commands require explicit approval and execution flags. Writing memory, registering identity, creating tokens, adding liquidity, removing liquidity, or moving assets must never happen automatically.
+State-changing commands require explicit approval and execution flags. Writing memory, registering identity, transferring assets, creating tokens, adding liquidity, or removing liquidity must never happen automatically.
+
+Wallet transfers use a safe two-step flow: build and simulate an exact preview without reading a keypair, then execute only when the user approves that exact `preview_sha256`.
 
 Treat any HXMP/agent wallet like a **hot wallet**. It exists for identity, memory, receipts, learning, and experimental protocol work. Do not use it as a treasury, savings wallet, or place to store meaningful funds. Keep only the small amount of XNT/AGI needed for tests and approved operations.
 
@@ -127,6 +130,7 @@ node scripts/hxmp_tools.mjs dry-run-soul --wallet <WALLET_PUBLIC_KEY> --profile 
 node scripts/hxmp_tools.mjs agentid-nft-image --wallet <WALLET_PUBLIC_KEY> --out /tmp/agentid-card.svg
 node scripts/hxmp_tools.mjs read-soul --wallet <WALLET_PUBLIC_KEY> --encryption-key ~/.hermes/x1/default/hxmp-encryption.key
 node scripts/agentid_register.mjs status --wallet <WALLET_PUBLIC_KEY>
+node scripts/x1_wallet_tools.mjs transfer-preview --wallet <WALLET_PUBLIC_KEY> --to <RECIPIENT_OWNER_WALLET> --amount 0.01
 node scripts/xdex_tools.mjs wallet-tokens --wallet <WALLET_PUBLIC_KEY>
 ```
 
@@ -138,7 +142,17 @@ node scripts/hxmp_tools.mjs write-soul \
   --encryption-key ~/.hermes/x1/default/hxmp-encryption.key \
   --expected-sha256 sha256:<HASH_FROM_DRY_RUN> \
   --execute --confirm-write
+
+node scripts/x1_wallet_tools.mjs transfer \
+  --keypair ~/.hermes/x1/default/id.json \
+  --to <RECIPIENT_OWNER_WALLET> \
+  --amount 1.25 \
+  --mint <OPTIONAL_TOKEN_MINT> \
+  --expected-preview-sha256 sha256:<APPROVED_HASH> \
+  --execute --confirm-transfer
 ```
+
+See `references/x1-wallet-transfers.md` for the complete transfer safety contract.
 
 ## GitHub safety
 

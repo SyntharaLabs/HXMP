@@ -1,7 +1,7 @@
 {
   "name": "HXMP Tools",
   "protocol": "HXMP",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Agent-discoverable command manifest for Hermes X1 Memory Protocol tools.",
   "runtime": {
     "type": "node",
@@ -15,7 +15,9 @@
     "never_print_or_commit_secret_keys": true,
     "never_print_or_commit_hxmp_encryption_keys": true,
     "memory_writes_require_dry_run_hash": true,
-    "memory_writes_require_readback_verification": true
+    "memory_writes_require_readback_verification": true,
+    "transfers_require_successful_simulation": true,
+    "transfers_require_exact_preview_sha256": true
   },
   "secret_files_never_commit": [
     "id.json",
@@ -131,6 +133,39 @@
       "requires_approval": true,
       "secret_inputs": [
         "KEYPAIR_PATH"
+      ]
+    },
+    "x1.transfer_preview": {
+      "description": "Validate, build, fee-check, and simulate an exact native XNT or SPL/Token-2022 wallet transfer without loading a keypair.",
+      "script": "node scripts/x1_wallet_tools.mjs transfer-preview --wallet <SENDER_PUBLIC_KEY> --to <RECIPIENT_OWNER_WALLET> --amount <AMOUNT> [--mint <TOKEN_MINT>]",
+      "inputs": [
+        "SENDER_PUBLIC_KEY",
+        "RECIPIENT_OWNER_WALLET",
+        "AMOUNT",
+        "OPTIONAL_TOKEN_MINT"
+      ],
+      "read_only": true,
+      "requires_approval": false
+    },
+    "x1.transfer": {
+      "description": "Rebuild, sign, broadcast, confirm, and balance-verify the exact user-approved transfer.",
+      "script": "node scripts/x1_wallet_tools.mjs transfer --keypair <KEYPAIR_PATH> --to <RECIPIENT_OWNER_WALLET> --amount <AMOUNT> [--mint <TOKEN_MINT>] --expected-preview-sha256 <APPROVED_HASH> --execute --confirm-transfer",
+      "inputs": [
+        "KEYPAIR_PATH",
+        "RECIPIENT_OWNER_WALLET",
+        "AMOUNT",
+        "OPTIONAL_TOKEN_MINT",
+        "APPROVED_HASH"
+      ],
+      "read_only": false,
+      "requires_approval": true,
+      "secret_inputs": [
+        "KEYPAIR_PATH"
+      ],
+      "preconditions": [
+        "The exact transaction preview simulated successfully.",
+        "The user approved the exact sender, recipient, asset, amount, accounts, fee, and preview SHA-256.",
+        "The freshly rebuilt intent matches APPROVED_HASH."
       ]
     },
     "x1.wallet_tokens": {
